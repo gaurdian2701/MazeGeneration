@@ -1,7 +1,10 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Rendering;
+using UnityEngine.UIElements;
+using Random = UnityEngine.Random;
 
 namespace DSA
 {
@@ -250,8 +253,17 @@ namespace DSA
                     // get next tile
                     // TODO: stretch exercise
                     // Find a more optimal way of removing the walls
-                    Tile nextTile = unvisitedNeighbors[Random.Range(0, unvisitedNeighbors.Count)];
-                    Wall sharedWall = System.Array.Find(current.m_walls, w => System.Array.IndexOf(nextTile.m_walls, w) >= 0);
+                    Tile nextTile = unvisitedNeighbors[Random.Range(0, unvisitedNeighbors.Count)]; 
+                    Wall sharedWall = null;
+                    for (int wall = 0; wall < Enum.GetValues(typeof(Direction)).Length; ++wall)
+                    {
+                        if(current.m_walls[wall] == nextTile.m_walls[(wall+2)%Enum.GetValues(typeof(Direction)).Length])
+                        {
+                            sharedWall = current.m_walls[wall];
+                            break;
+                        }
+                    }
+
                     current.m_walls = System.Array.ConvertAll(current.m_walls, w => w == sharedWall ? null : w);
                     nextTile.m_walls = System.Array.ConvertAll(nextTile.m_walls, w => w == sharedWall ? null : w);
                     // end stretch exercise
