@@ -159,7 +159,9 @@ namespace DSA
 
             InitializeMaze();
             UpdateMesh();
-            StartCoroutine(GenerateMaze());
+            // StartCoroutine(GenerateMaze());
+            Vector2Int tileVector = new Vector2Int(Random.Range(0, m_vSize.x), Random.Range(0, m_vSize.y));
+            RecursivelyGenerateMaze(this[tileVector.x, tileVector.y]);
         }
 
         protected void InitializeMaze()
@@ -228,14 +230,14 @@ namespace DSA
             while (backtrackerStack.Count > 0)
             {
                 // get current tile
-                Tile current = backtrackerStack.Pop();
-                current.m_bOnStack = false;
+                Tile currentTile = backtrackerStack.Pop();
+                currentTile.m_bOnStack = false;
 
                 // find unvisited neighbors
                 List<Tile> unvisitedNeighbors = new List<Tile>();
                 foreach(Vector2Int vDir in sm_directions)
                 {
-                    Vector2Int vNeighbor = current.m_vCoord + vDir;
+                    Vector2Int vNeighbor = currentTile.m_vCoord + vDir;
                     Tile neighbor = this[vNeighbor.x, vNeighbor.y];
                     if (neighbor != null && !neighbor.m_bVisited)
                     {
@@ -247,15 +249,15 @@ namespace DSA
                 if (unvisitedNeighbors.Count > 0)
                 {
                     // push current tile back on stack
-                    backtrackerStack.Push(current);
-                    current.m_bOnStack = true;
+                    backtrackerStack.Push(currentTile);
+                    currentTile.m_bOnStack = true;
                     Tile nextTile = unvisitedNeighbors[Random.Range(0, unvisitedNeighbors.Count)]; 
                     int numberOfWalls = Enum.GetValues(typeof(Direction)).Length;
                     int currentTileSharedWallIndex = -1;
                     int nextTileSharedWallIndex = -1;
                     for (int wall = 0; wall < numberOfWalls; ++wall)
                     {
-                        if(current.m_walls[wall] == nextTile.m_walls[(wall+2)%numberOfWalls])
+                        if(currentTile.m_walls[wall] == nextTile.m_walls[(wall+2)%numberOfWalls])
                         {
                             currentTileSharedWallIndex = wall;
                             nextTileSharedWallIndex = (wall+2)%numberOfWalls;
@@ -263,18 +265,59 @@ namespace DSA
                         }
                     }
 
-                    current.m_walls[currentTileSharedWallIndex] = null;
+                    currentTile.m_walls[currentTileSharedWallIndex] = null;
                     nextTile.m_walls[nextTileSharedWallIndex] = null;
 
                     // push next tile 
                     nextTile.m_bVisited = true;
-                    nextTile.m_parentTile = current;
+                    nextTile.m_parentTile = currentTile;
                     backtrackerStack.Push(nextTile);
                     nextTile.m_bOnStack = true;
                 }
 
                 UpdateMesh();
                 yield return null;
+            }
+        }
+
+        void RecursivelyGenerateMaze(Tile currentTile)
+        {
+            currentTile.m_bVisited = true;
+            List<Tile> unvisitedNeighbors = new List<Tile>();
+            foreach (Vector2Int vDir in sm_directions)
+            {
+                Vector2Int vNeighbor = currentTile.m_vCoord + vDir;
+                Tile neighbor = this[vNeighbor.x, vNeighbor.y];
+                if (neighbor != null && !neighbor.m_bVisited)
+                {
+                    unvisitedNeighbors.Add(neighbor);
+                }
+            }
+
+            if (unvisitedNeighbors.Count == 0)
+                return;
+
+            while (unvisitedNeighbors.Count > 0)
+            {
+                int nextTileIndex = Random.Range(0, unvisitedNeighbors.Count);
+                Tile nextTile = unvisitedNeighbors[nextTileIndex];
+                int numberOfWalls = Enum.GetValues(typeof(Direction)).Length;
+                int currentTileSharedWallIndex = -1;
+                int nextTileSharedWallIndex = -1;
+                for (int wall = 0; wall < numberOfWalls; ++wall)
+                {
+                    if(currentTile.m_walls[wall] == nextTile.m_walls[(wall+2)%numberOfWalls])
+                    {
+                        currentTileSharedWallIndex = wall;
+                        nextTileSharedWallIndex = (wall+2)%numberOfWalls;
+                        break;
+                    }
+                }
+                currentTile.m_walls[currentTileSharedWallIndex] = null;
+                nextTile.m_walls[nextTileSharedWallIndex] = null;
+                unvisitedNeighbors.RemoveAt(nextTileIndex);
+                UpdateMesh();
+                RecursivelyGenerateMaze(nextTile);   
             }
         }
 
